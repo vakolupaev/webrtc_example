@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>WebRTC Stream</title>
+</head>
+<body>
+  <video id="video" autoplay playsinline height="720" width="1280" muted></video>
+  <script>
+    const pc = new RTCPeerConnection();
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    const video = document.getElementById('video');
+
+    setInterval(() => {
+        video.play();
+    }, 1000)
+
+    pc.ontrack = (event) => {
+      video.srcObject = event.streams[0];
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        ws.send(JSON.stringify({
+          type: "Ice",
+          data: {
+            candidate: event.candidate.candidate,
+            sdpMLineIndex: event.candidate.sdpMLineIndex
+          }
+        }));
+      }
+    };
+
+    ws.onmessage = async (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "Sdp") {
+        const desc = new RTCSessionDescription({
+          type: msg.data.kind,
+          sdp: msg.data.sdp,
+        });
+        await pc.setRemoteDescription(desc);
+        if (desc.type === "offer") {
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({
+            type: "Sdp",
+            data: {
+              sdp: pc.localDescription.sdp,
+              kind: pc.localDescription.type,
+            }
+          }));
+        }
+      } else if (msg.type === "Ice") {
+        await pc.addIceCandidate(new RTCIceCandidate(msg.data));
+      }
+    };
+  </script>
+</body>
+</html>
