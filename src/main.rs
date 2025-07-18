@@ -131,8 +131,8 @@ fn create_webrtc_pipeline(
 
     let capsfilter = gst::ElementFactory::make("capsfilter").build().unwrap();
     let caps = gst::Caps::builder("video/x-raw")
-        .field("width", 1920)
-        .field("height", 1080)
+        .field("width", 1280)
+        .field("height", 720)
         .field("framerate", gst::Fraction::new(60, 1))
         .build();
     capsfilter.set_property("caps", &caps);
@@ -142,6 +142,7 @@ fn create_webrtc_pipeline(
     let enc = gst::ElementFactory::make_with_name("x264enc", None).unwrap();
     enc.set_property_from_str("tune", "zerolatency");
     enc.set_property_from_str("speed-preset", "ultrafast");
+    // let enc = gst::ElementFactory::make_with_name("nvh264enc", None).unwrap();
     enc.set_property("bitrate", 20000u32);
 
     let queue = gst::ElementFactory::make("queue").build().unwrap();
