@@ -150,7 +150,7 @@ fn create_webrtc_pipeline(
     let pay = gst::ElementFactory::make_with_name("rtph264pay", None).unwrap();
     pay.set_property("config-interval", 1);
 
-    let src_pad = pay.static_pad("srcrtp").unwrap();
+    let src_pad = pay.static_pad("src").unwrap();
     let capsss = gst::Caps::builder("application/x-rtp")
     .field("media", "video")
     .field("encoding-name", "H264")
