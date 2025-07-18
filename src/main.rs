@@ -150,13 +150,21 @@ fn create_webrtc_pipeline(
     let pay = gst::ElementFactory::make_with_name("rtph264pay", None).unwrap();
     pay.set_property("config-interval", 1);
 
+    let capsfilter = gst::ElementFactory::make("capsfilter").build().unwrap();
+    let caps = gst::Caps::builder("application/x-rtp")
+        .field("media", "video")
+        .field("encoding-name", "H264")
+        .field("payload", 96i32)
+        .build();
+    capsfilter.set_property("caps", &caps);
+
 
     let webrtcbin = gst::ElementFactory::make_with_name("webrtcbin", Some("webrtcbin")).unwrap();
     webrtcbin.set_property_from_str("bundle-policy", "max-bundle");
     webrtcbin.set_property("latency", 0u32);
 
-    pipeline.add_many(&[&src, &capsfilter, &overlay, &conv, &enc, &queue, &pay, &webrtcbin])?;
-    gst::Element::link_many(&[&src, &capsfilter,&overlay, &conv, &enc, &queue, &pay])?;
+    pipeline.add_many(&[&src, &capsfilter, &overlay, &conv, &enc, &queue, &pay, &capsfilter, &webrtcbin])?;
+    gst::Element::link_many(&[&src, &capsfilter,&overlay, &conv, &enc, &queue, &pay, &capsfilter])?;
     // pipeline.add_many(&[&src, &conv, &enc, &queue, &pay, &webrtcbin])?;
     // gst::Element::link_many(&[&src, &conv, &enc, &queue, &pay])?;
     pay.link(&webrtcbin)?;
