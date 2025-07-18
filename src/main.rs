@@ -150,10 +150,25 @@ fn create_webrtc_pipeline(
     let pay = gst::ElementFactory::make_with_name("rtph264pay", None).unwrap();
     pay.set_property("config-interval", 1);
 
+    let src_pad = pay.static_pad("srcrtp").unwrap();
+    let capsss = gst::Caps::builder("application/x-rtp")
+    .field("media", "video")
+    .field("encoding-name", "H264")
+    .field("payload", 96i32)
+    .build();
+    src_pad.set_property("caps", &capsss);
 
     let webrtcbin = gst::ElementFactory::make_with_name("webrtcbin", Some("webrtcbin")).unwrap();
     webrtcbin.set_property_from_str("bundle-policy", "max-bundle");
     webrtcbin.set_property("latency", 0u32);
+
+    let sink_pad = webrtcbin
+        .request_pad_simple("sink_%u")
+        .expect("Failed to request sink pad from webrtcbin");
+
+    if src_pad.link(&sink_pad).is_err() {
+        eprintln!("Failed to link rtph264pay to webrtcbin");
+    }
 
     pipeline.add_many(&[&src, &capsfilter, &overlay, &conv, &enc, &queue, &pay, &webrtcbin])?;
     gst::Element::link_many(&[&src, &capsfilter,&overlay, &conv, &enc, &queue, &pay])?;
